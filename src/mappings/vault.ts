@@ -23,23 +23,8 @@ import {
   getBalancerSnapshot,
 } from './helpers/misc';
 import { updatePoolWeights } from './helpers/weighted';
-import {
-  isPricingAsset,
-  updatePoolLiquidity,
-  valueInUSD,
-  swapValueInUSD,
-  getPreferentialPricingAsset,
-  updateLatestPrice,
-} from './pricing';
-import {
-  MIN_POOL_LIQUIDITY,
-  MIN_SWAP_VALUE_USD,
-  SWAP_IN,
-  SWAP_OUT,
-  ZERO,
-  ZERO_ADDRESS,
-  ZERO_BD,
-} from './helpers/constants';
+import { isPricingAsset, updatePoolLiquidity, valueInUSD, swapValueInUSD, updateLatestPrice } from './pricing';
+import { MIN_POOL_LIQUIDITY, MIN_SWAP_VALUE_USD, SWAP_IN, SWAP_OUT, ZERO, ZERO_BD } from './helpers/constants';
 import { hasVirtualSupply, isVariableWeightPool, isStableLikePool, PoolType } from './helpers/pools';
 import { updateAmpFactor } from './helpers/stable';
 import { PoolCreated, WeightedPoolFactory } from '../types/WeightedPoolFactory/WeightedPoolFactory';
