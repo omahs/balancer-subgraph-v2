@@ -24,7 +24,7 @@ import {
 } from './helpers/misc';
 import { updatePoolWeights } from './helpers/weighted';
 import { isPricingAsset, updatePoolLiquidity, valueInUSD, swapValueInUSD, updateLatestPrice } from './pricing';
-import { MIN_POOL_LIQUIDITY, MIN_SWAP_VALUE_USD, SWAP_IN, SWAP_OUT, ZERO, ZERO_BD } from './helpers/constants';
+import { SWAP_IN, SWAP_OUT, ZERO, ZERO_BD } from './helpers/constants';
 import { hasVirtualSupply, isVariableWeightPool, isStableLikePool, PoolType } from './helpers/pools';
 import { updateAmpFactor } from './helpers/stable';
 import { PoolCreated, WeightedPoolFactory } from '../types/WeightedPoolFactory/WeightedPoolFactory';
@@ -419,11 +419,7 @@ export function handleSwapEvent(event: SwapEvent): void {
   let block = event.block.number;
   let tokenInWeight = poolTokenIn.weight;
   let tokenOutWeight = poolTokenOut.weight;
-  if (
-    isPricingAsset(tokenInAddress) &&
-    pool.totalLiquidity.gt(MIN_POOL_LIQUIDITY) &&
-    swap.valueUSD.gt(MIN_SWAP_VALUE_USD)
-  ) {
+  if (isPricingAsset(tokenInAddress)) {
     let tokenPriceId = getTokenPriceId(poolId.toHex(), tokenOutAddress, tokenInAddress, block);
     let tokenPrice = new TokenPrice(tokenPriceId);
     //tokenPrice.poolTokenId = getPoolTokenId(poolId, tokenOutAddress);
@@ -447,11 +443,7 @@ export function handleSwapEvent(event: SwapEvent): void {
 
     updateLatestPrice(tokenPrice);
   }
-  if (
-    isPricingAsset(tokenOutAddress) &&
-    pool.totalLiquidity.gt(MIN_POOL_LIQUIDITY) &&
-    swap.valueUSD.gt(MIN_SWAP_VALUE_USD)
-  ) {
+  if (isPricingAsset(tokenOutAddress)) {
     let tokenPriceId = getTokenPriceId(poolId.toHex(), tokenInAddress, tokenOutAddress, block);
     let tokenPrice = new TokenPrice(tokenPriceId);
     //tokenPrice.poolTokenId = getPoolTokenId(poolId, tokenInAddress);
