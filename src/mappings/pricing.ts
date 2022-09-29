@@ -19,79 +19,55 @@ export function getPreferentialPricingAsset(assets: Address[]): Address {
   return ZERO_ADDRESS;
 }
 
-export function updatePoolLiquidity(poolId: string, block: BigInt, pricingAsset: Address, timestamp: i32): boolean {
+export function updatePoolLiquidity(poolId: string, block: BigInt, timestamp: i32): boolean {
   let pool = Pool.load(poolId);
   if (pool == null) return false;
 
   let tokensList: Bytes[] = pool.tokensList;
   if (tokensList.length < 2) return false;
-  if (hasVirtualSupply(pool) && pool.address == pricingAsset) return false;
 
-  let poolValue: BigDecimal = ZERO_BD;
+  let poolValueUSD: BigDecimal = ZERO_BD;
 
   for (let j: i32 = 0; j < tokensList.length; j++) {
     let tokenAddress: Address = Address.fromString(tokensList[j].toHexString());
 
     let poolToken = loadPoolToken(poolId, tokenAddress);
-    if (poolToken == null) continue;
+    if (!poolToken) continue;
 
-    if (tokenAddress == pricingAsset) {
-      poolValue = poolValue.plus(poolToken.balance);
-      continue;
-    }
     let poolTokenQuantity: BigDecimal = poolToken.balance;
 
-    let price: BigDecimal = ZERO_BD;
-    let latestPriceId = getLatestPriceId(tokenAddress, pricingAsset);
-    let latestPrice = LatestPrice.load(latestPriceId);
-
-    // note that we can only meaningfully report liquidity once assets are traded with
-    // the pricing asset
-    if (latestPrice) {
-      // value in terms of priceableAsset
-      price = latestPrice.price;
-    } else if (pool.poolType == PoolType.StablePhantom || pool.poolType == PoolType.ComposableStable) {
-      // try to estimate token price in terms of pricing asset
-      let pricingAssetInUSD = valueInUSD(ONE_BD, pricingAsset);
-      let currentTokenInUSD = valueInUSD(ONE_BD, tokenAddress);
-
-      if (pricingAssetInUSD.equals(ZERO_BD) || currentTokenInUSD.equals(ZERO_BD)) {
-        continue;
-      }
-
-      price = currentTokenInUSD.div(pricingAssetInUSD);
-    }
+    let token = getToken(tokenAddress);
+    let tokenLatestUSDPrice = token.latestUSDPrice;
+    if (!tokenLatestUSDPrice) continue;
 
     // Exclude virtual supply from pool value
     if (hasVirtualSupply(pool) && pool.address == tokenAddress) {
       continue;
     }
 
-    if (price.gt(ZERO_BD)) {
-      let poolTokenValue = price.times(poolTokenQuantity);
-      poolValue = poolValue.plus(poolTokenValue);
-    }
+    let poolTokenValue = tokenLatestUSDPrice.times(poolTokenQuantity);
+    poolValueUSD = poolValueUSD.plus(poolTokenValue);
   }
 
   let oldPoolLiquidity: BigDecimal = pool.totalLiquidity;
-  let newPoolLiquidity: BigDecimal = valueInUSD(poolValue, pricingAsset) || ZERO_BD;
+  let newPoolLiquidity: BigDecimal = poolValueUSD;
   let liquidityChange: BigDecimal = newPoolLiquidity.minus(oldPoolLiquidity);
 
   // If the pool isn't empty but we have a zero USD value then it's likely that we have a bad pricing asset
   // Don't commit any changes and just report the failure.
-  if (poolValue.gt(ZERO_BD) != newPoolLiquidity.gt(ZERO_BD)) {
+  if (poolValueUSD.gt(ZERO_BD) != newPoolLiquidity.gt(ZERO_BD)) {
     return false;
   }
 
   // Take snapshot of pool state
-  let phlId = getPoolHistoricalLiquidityId(poolId, pricingAsset, block);
+  let phlId = getPoolHistoricalLiquidityId(poolId, USD_STABLE_ASSETS[0], block);
   let phl = new PoolHistoricalLiquidity(phlId);
   phl.poolId = poolId;
-  phl.pricingAsset = pricingAsset;
+  phl.pricingAsset = USD_STABLE_ASSETS[0];
   phl.block = block;
   phl.poolTotalShares = pool.totalShares;
-  phl.poolLiquidity = poolValue;
-  phl.poolShareValue = pool.totalShares.gt(ZERO_BD) ? poolValue.div(pool.totalShares) : ZERO_BD;
+  phl.poolLiquidity = poolValueUSD;
+  phl.poolShareValue = pool.totalShares.gt(ZERO_BD) ? poolValueUSD.div(pool.totalShares) : ZERO_BD;
   phl.save();
 
   // Update pool stats
