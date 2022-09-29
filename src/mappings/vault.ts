@@ -156,17 +156,7 @@ function handlePoolJoined(event: PoolBalanceChanged): void {
     tokenSnapshot.save();
   }
 
-  for (let i: i32 = 0; i < tokenAddresses.length; i++) {
-    let tokenAddress: Address = Address.fromString(tokenAddresses[i].toHexString());
-    if (isPricingAsset(tokenAddress)) {
-      let success = updatePoolLiquidity(poolId, event.block.number, tokenAddress, blockTimestamp);
-      // Some pricing assets may not have a route back to USD yet
-      // so we keep trying until we find one
-      if (success) {
-        break;
-      }
-    }
-  }
+  updatePoolLiquidity(poolId, event.block.number, blockTimestamp);
 
   // StablePhantom and ComposableStable pools only emit the PoolBalanceChanged event
   // with a non-zero value for the BPT amount when the pool is initialized,
@@ -253,17 +243,7 @@ function handlePoolExited(event: PoolBalanceChanged): void {
     tokenSnapshot.save();
   }
 
-  for (let i: i32 = 0; i < tokenAddresses.length; i++) {
-    let tokenAddress: Address = Address.fromString(tokenAddresses[i].toHexString());
-    if (isPricingAsset(tokenAddress)) {
-      let success = updatePoolLiquidity(poolId, event.block.number, tokenAddress, blockTimestamp);
-      // Some pricing assets may not have a route back to USD yet
-      // so we keep trying until we find one
-      if (success) {
-        break;
-      }
-    }
-  }
+  updatePoolLiquidity(poolId, event.block.number, blockTimestamp);
 }
 
 /************************************
@@ -511,10 +491,7 @@ export function handleSwapEvent(event: SwapEvent): void {
     updateLatestPrice(tokenPrice);
   }
 
-  const preferentialToken = getPreferentialPricingAsset([tokenInAddress, tokenOutAddress]);
-  if (preferentialToken != ZERO_ADDRESS) {
-    updatePoolLiquidity(poolId.toHex(), block, preferentialToken, blockTimestamp);
-  }
+  updatePoolLiquidity(poolId.toHex(), block, blockTimestamp);
 }
 
 // Temporary solution to handle WeightedPoolV2 creations on Polygon
