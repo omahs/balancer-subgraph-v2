@@ -17,7 +17,7 @@ Clone the `pool-management-v2` repo and `core` repo submodules
 
 ### Recommended setup: Running V2 contracts, frontend and subgraph against development parity chain
 
-Docker compose can be started in various configurations to start a local etherem chain, a graph-node, and it's requisite services.
+Docker compose can be started in various configurations to start a local ethereum chain, a graph-node, and its requisite services.
 
 Start a parity chain and a graph node by running
 ```
